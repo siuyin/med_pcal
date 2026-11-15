@@ -1,0 +1,9 @@
+opt -P a4
+opt -n Helvetica/14
+opt -b all
+opt -B
+
+year all
+all days in all [ ] Morning
+# all days in all [ ] Afternoon
+all days in all [ ] Evening
