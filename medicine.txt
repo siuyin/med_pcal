@@ -1,7 +1,8 @@
 opt -P a4
 opt -n Helvetica/14
-opt -b all
+#opt -b all
 opt -B
+opt -s 0.6
 
 year all
 all days in all [ ] Morning
