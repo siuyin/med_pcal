@@ -58,6 +58,32 @@ func TestRenderTemplate(t *testing.T) {
 	}
 }
 
+func TestParseMajorVersion(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    int
+		wantErr bool
+	}{
+		{"pdfjam 3", "pdfjam version 3.03", 3, false},
+		{"pdfjam 4", "pdfjam 4.0", 4, false},
+		{"bare version", "v4", 4, false},
+		{"no version", "pdfjam", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseMajorVersion(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseMajorVersion(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("parseMajorVersion(%q) = %d, want %d", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGenInvalidParams(t *testing.T) {
 	tests := []struct {
 		name   string

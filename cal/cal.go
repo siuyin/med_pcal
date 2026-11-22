@@ -6,11 +6,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"text/template"
 
 	"medpcal/tmpl"
 )
+
+var versionRE = regexp.MustCompile(`[0-9]+`)
 
 // Params configures the calendar generation.
 type Params struct {
@@ -80,10 +83,42 @@ func renderTemplate(p Params, path string) error {
 	return nil
 }
 
+func pdfjamMajorVersion() (int, error) {
+	out, err := exec.Command("pdfjam", "--version").CombinedOutput()
+	if err != nil {
+		return 0, fmt.Errorf("pdfjam --version: %w", err)
+	}
+	return parseMajorVersion(string(out))
+}
+
+func parseMajorVersion(s string) (int, error) {
+	m := versionRE.FindString(s)
+	if m == "" {
+		return 0, fmt.Errorf("pdfjam version not found in %q", s)
+	}
+
+	version, err := strconv.Atoi(m)
+	if err != nil {
+		return 0, fmt.Errorf("pdfjam version: %w", err)
+	}
+	return version, nil
+}
+
 func execCmds(p Params, medicineFile, pcalStdoutFile, bookPath string) error {
+	pdfjamVersion, err := pdfjamMajorVersion()
+	if err != nil {
+		return err
+	}
+
+	pdfjamArgs := []string{"--booklet", "true"}
+	if pdfjamVersion >= 4 {
+		pdfjamArgs = append(pdfjamArgs, "--otheredge")
+	}
+	pdfjamArgs = append(pdfjamArgs, "--outfile", bookPath, pcalStdoutFile)
+
 	cmdPcal := exec.Command("pcal", "-f", medicineFile, strconv.Itoa(p.StartMonth), strconv.Itoa(p.StartYear), "4")
 	cmdPs2pdf := exec.Command("ps2pdf", "-", pcalStdoutFile)
-	cmdPdfJam := exec.Command("pdfjam", "--booklet", "true", "--outfile", bookPath, pcalStdoutFile)
+	cmdPdfJam := exec.Command("pdfjam", pdfjamArgs...)
 
 	pcalStdoutPipe, err := cmdPcal.StdoutPipe()
 	if err != nil {
