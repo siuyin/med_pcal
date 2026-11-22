@@ -25,4 +25,4 @@ validate_params "$1" "$2"
 
 pcal -f medicine.txt $1 $2 4 | ps2pdf - medicine_calendar.pdf
 
-pdfjam --booklet true --outfile medicine_calendar-book.pdf  medicine_calendar.pdf
+pdfjam --booklet 'true'  --outfile medicine_calendar-book.pdf  medicine_calendar.pdf
