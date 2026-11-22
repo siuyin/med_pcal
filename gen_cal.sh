@@ -23,6 +23,12 @@ validate_params() {
 
 validate_params "$1" "$2"
 
-pcal -f medicine.txt $1 $2 4 | ps2pdf - medicine_calendar.pdf
+pcal -f medicine.txt "$1" "$2" 4 | ps2pdf - medicine_calendar.pdf
 
-pdfjam --booklet 'true'  --shortedge --outfile medicine_calendar-book.pdf  medicine_calendar.pdf
+pdfjam_version="$(pdfjam --version 2>&1 | grep -oE '[0-9]+' | head -n 1)"
+
+if [ "${pdfjam_version:-0}" -ge 4 ] 2>/dev/null; then
+    pdfjam --booklet true --otheredge --outfile medicine_calendar-book.pdf medicine_calendar.pdf
+else
+    pdfjam --booklet true --outfile medicine_calendar-book.pdf medicine_calendar.pdf
+fi
