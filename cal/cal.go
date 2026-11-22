@@ -7,28 +7,40 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"text/template"
+
+	"medpcal/tmpl"
 )
 
-// Gen generates a medicine calendar booklet starting at startMonth/startYear.
-// It returns the path to the generated booklet PDF.
-func Gen(startMonth, startYear int) (string, error) {
-	if err := checkParams(startMonth, startYear); err != nil {
-		return "", err
-	}
-	return run(startMonth, startYear)
+// Params configures the calendar generation.
+type Params struct {
+	StartMonth int
+	StartYear  int
+	Morning    bool
+	Afternoon  bool
+	Evening    bool
 }
 
-func checkParams(startMonth, startYear int) error {
-	if startMonth < 1 || startMonth > 12 {
+// Gen generates a medicine calendar booklet from p.
+// It returns the path to the generated booklet PDF.
+func Gen(p Params) (string, error) {
+	if err := checkParams(p); err != nil {
+		return "", err
+	}
+	return run(p)
+}
+
+func checkParams(p Params) error {
+	if p.StartMonth < 1 || p.StartMonth > 12 {
 		return fmt.Errorf("start_month must be between 1 and 12")
 	}
-	if startYear < 1000 || startYear > 9999 {
+	if p.StartYear < 1000 || p.StartYear > 9999 {
 		return fmt.Errorf("start_year must be a 4-digit year")
 	}
 	return nil
 }
 
-func run(startMonth, startYear int) (string, error) {
+func run(p Params) (string, error) {
 	tmpDir, err := os.MkdirTemp("", "medpcal-*")
 	if err != nil {
 		return "", fmt.Errorf("temp dir: %w", err)
@@ -36,16 +48,40 @@ func run(startMonth, startYear int) (string, error) {
 
 	pcalStdoutFile := filepath.Join(tmpDir, "medicine_calendar.pdf")
 	bookPath := filepath.Join(tmpDir, "medicine_calendar-book.pdf")
+	medicineFile := filepath.Join(tmpDir, "medicine.txt")
 
-	if err := execCmds(startMonth, startYear, pcalStdoutFile, bookPath); err != nil {
+	if err := renderTemplate(p, medicineFile); err != nil {
+		return "", err
+	}
+
+	if err := execCmds(p, medicineFile, pcalStdoutFile, bookPath); err != nil {
 		return "", err
 	}
 
 	return bookPath, nil
 }
 
-func execCmds(startMonth, startYear int, pcalStdoutFile, bookPath string) error {
-	cmdPcal := exec.Command("pcal", "-f", "medicine.txt", strconv.Itoa(startMonth), strconv.Itoa(startYear), "4")
+func renderTemplate(p Params, path string) error {
+	t, err := template.New("medicine").Parse(tmpl.Medicine)
+	if err != nil {
+		return fmt.Errorf("parse template: %w", err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create template: %w", err)
+	}
+	defer f.Close()
+
+	if err := t.Execute(f, p); err != nil {
+		return fmt.Errorf("render template: %w", err)
+	}
+
+	return nil
+}
+
+func execCmds(p Params, medicineFile, pcalStdoutFile, bookPath string) error {
+	cmdPcal := exec.Command("pcal", "-f", medicineFile, strconv.Itoa(p.StartMonth), strconv.Itoa(p.StartYear), "4")
 	cmdPs2pdf := exec.Command("ps2pdf", "-", pcalStdoutFile)
 	cmdPdfJam := exec.Command("pdfjam", "--booklet", "true", "--outfile", bookPath, pcalStdoutFile)
 

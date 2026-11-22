@@ -37,7 +37,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	bookPath, err := cal.Gen(startMonth, startYear)
+	bookPath, err := cal.Gen(cal.Params{
+		StartMonth: startMonth,
+		StartYear:  startYear,
+		Morning:    true,
+		Evening:    true,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}

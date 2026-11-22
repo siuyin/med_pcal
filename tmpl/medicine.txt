@@ -1,0 +1,11 @@
+opt -P a4
+opt -n Helvetica/14
+#opt -b all
+opt -B
+opt -s 0.6
+
+year all
+{{if .Morning}}all days in all [ ] Morning
+{{end}}{{if .Afternoon}}all days in all [ ] Afternoon
+{{end}}{{if .Evening}}all days in all [ ] Evening
+{{end}}
